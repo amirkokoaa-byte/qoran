@@ -1,0 +1,734 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>تطبيق نور الإسلام - قرآن، أذان، وشفاء</title>
+    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@300;500;700;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        :root {
+            --glass-bg: rgba(20, 20, 20, 0.7);
+            --glass-border: rgba(255, 255, 255, 0.1);
+            --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.5);
+            --accent-color: #00d2ff;
+            --gold-color: #ffd700;
+            --text-color: #ffffff;
+            --bg-gradient: linear-gradient(135deg, #1a2a6c, #b21f1f, #fdbb2d);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Tajawal', sans-serif; scrollbar-width: thin; }
+        
+        body {
+            background: url('https://images.unsplash.com/photo-1597733336794-12d05021d510?q=80&w=1974&auto=format&fit=crop') center/cover fixed;
+            height: 100vh;
+            color: var(--text-color);
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        /* الطبقة الزجاجية الرئيسية */
+        .app-window {
+            width: 95vw;
+            height: 92vh;
+            background: rgba(18, 18, 25, 0.85);
+            backdrop-filter: blur(25px);
+            -webkit-backdrop-filter: blur(25px);
+            border: 1px solid var(--glass-border);
+            border-radius: 18px;
+            box-shadow: var(--glass-shadow);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* الهيدر */
+        .header {
+            padding: 10px 25px;
+            border-bottom: 1px solid var(--glass-border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(255, 255, 255, 0.03);
+        }
+
+        .header-title h1 {
+            background: linear-gradient(to right, #00d2ff, #3a7bd5);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            font-weight: 900;
+            font-size: 1.8rem;
+        }
+
+        .header-info {
+            text-align: left;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .date-text {
+            font-size: 0.8rem;
+            color: #ccc;
+            margin-bottom: 2px;
+        }
+
+        .time-text {
+            font-weight: bold;
+            font-size: 1.2rem;
+            color: var(--accent-color);
+            direction: ltr; /* لضبط تنسيق الأرقام والAM/PM */
+        }
+
+        /* التخطيط الداخلي */
+        .layout { display: flex; flex: 1; overflow: hidden; }
+
+        /* القائمة الجانبية */
+        .sidebar {
+            width: 90px;
+            background: rgba(0, 0, 0, 0.3);
+            border-left: 1px solid var(--glass-border);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding-top: 20px;
+            padding-bottom: 10px;
+            gap: 15px;
+            z-index: 10;
+        }
+
+        .nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            width: 70px;
+            height: 70px;
+            border-radius: 12px;
+            color: #aaa;
+            cursor: pointer;
+            transition: 0.3s;
+            text-align: center;
+            font-size: 0.8rem;
+            text-decoration: none; /* للروابط */
+        }
+        
+        .nav-item i { font-size: 1.4rem; margin-bottom: 5px; }
+        .nav-item:hover { background: rgba(255,255,255,0.1); color: #fff; }
+        .nav-item.active { background: rgba(0, 210, 255, 0.2); color: var(--accent-color); border: 1px solid rgba(0, 210, 255, 0.3); }
+
+        /* زر الدعم */
+        .support-btn {
+            margin-top: auto; /* يدفعه للأسفل */
+            border: 1px solid rgba(255, 215, 0, 0.3);
+            background: rgba(255, 215, 0, 0.05);
+        }
+        .support-btn:hover {
+            background: rgba(255, 215, 0, 0.2);
+            box-shadow: 0 0 15px rgba(255, 215, 0, 0.2);
+        }
+        .support-btn i, .support-btn span {
+            color: var(--gold-color);
+        }
+
+        /* منطقة المحتوى */
+        .content {
+            flex: 1;
+            padding: 25px;
+            overflow-y: auto;
+            position: relative;
+        }
+
+        .section { display: none; animation: fadeIn 0.4s ease-out; }
+        .section.active { display: block; }
+
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* أدوات التحكم */
+        select, .btn {
+            background: rgba(255,255,255,0.1);
+            border: 1px solid var(--glass-border);
+            color: #fff;
+            padding: 10px 15px;
+            border-radius: 8px;
+            outline: none;
+            cursor: pointer;
+            margin: 5px;
+        }
+        option { background: #222; }
+        
+        .btn-primary { background: linear-gradient(135deg, #00d2ff, #3a7bd5); border: none; font-weight: bold; }
+        .btn-primary:hover { opacity: 0.9; }
+
+        /* القران */
+        .quran-container {
+            background: rgba(255,255,255,0.05);
+            padding: 30px;
+            border-radius: 15px;
+            font-size: 1.6rem;
+            line-height: 2.4;
+            text-align: justify;
+            min-height: 300px;
+        }
+        .ayah { display: inline; cursor: pointer; transition: 0.2s; padding: 2px 5px; border-radius: 4px; }
+        .ayah:hover { background: rgba(0, 210, 255, 0.15); }
+        .ayah-num { color: var(--accent-color); font-size: 1rem; margin: 0 5px; font-family: sans-serif; }
+
+        /* مواقيت الصلاة */
+        .prayer-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+        .prayer-card {
+            background: rgba(0,0,0,0.4);
+            padding: 20px;
+            border-radius: 12px;
+            text-align: center;
+            border: 1px solid var(--glass-border);
+        }
+        .prayer-card.next { border: 1px solid var(--accent-color); box-shadow: 0 0 15px rgba(0, 210, 255, 0.2); }
+        .prayer-name { font-size: 1.2rem; margin-bottom: 5px; color: #ccc; }
+        .prayer-time { font-size: 1.5rem; font-weight: bold; color: #fff; }
+
+        .adhan-controls {
+            background: rgba(255,255,255,0.05);
+            padding: 15px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 15px;
+            border: 1px solid var(--glass-border);
+        }
+
+        /* الأعشاب */
+        .herb-search {
+            width: 100%;
+            padding: 12px;
+            border-radius: 8px;
+            border: 1px solid var(--glass-border);
+            background: rgba(0,0,0,0.3);
+            color: #fff;
+            margin-bottom: 20px;
+        }
+        .herb-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 15px; }
+        .herb-card {
+            background: rgba(255,255,255,0.06);
+            padding: 15px;
+            border-radius: 10px;
+            border: 1px solid var(--glass-border);
+            transition: transform 0.2s;
+        }
+        .herb-card:hover { transform: translateY(-5px); background: rgba(255,255,255,0.1); }
+        .herb-title { color: var(--accent-color); font-size: 1.1rem; font-weight: bold; margin-bottom: 8px; }
+        .herb-usage { margin-top: 10px; font-size: 0.9rem; color: #ddd; background: rgba(0,0,0,0.2); padding: 8px; border-radius: 6px; }
+
+        /* الأذكار */
+        .azkar-container { display: flex; flex-direction: column; gap: 10px; }
+        .zekr-card {
+            background: rgba(255,255,255,0.05);
+            padding: 15px;
+            border-radius: 10px;
+            border-right: 4px solid #ffd700;
+        }
+        .zekr-count { background: #333; padding: 2px 8px; border-radius: 10px; font-size: 0.8rem; margin-right: 10px; }
+
+        /* مشغل الصوت السفلي */
+        .player-bar {
+            background: rgba(10, 10, 15, 0.95);
+            padding: 10px 15px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-top: 1px solid var(--glass-border);
+            gap: 15px;
+        }
+        audio { flex: 1; height: 35px; outline: none; }
+        
+        .dev-credit {
+            font-size: 0.8rem;
+            color: #666;
+            white-space: nowrap;
+            font-family: 'Tajawal', sans-serif;
+            margin-right: 10px;
+            animation: glow 2s infinite alternate;
+        }
+        
+        @keyframes glow { from { text-shadow: 0 0 2px #fff; color: #fff; } to { text-shadow: none; color: #666; } }
+
+        /* التنبيهات */
+        .toggle-switch {
+            position: relative;
+            display: inline-block;
+            width: 50px;
+            height: 24px;
+        }
+        .toggle-switch input { opacity: 0; width: 0; height: 0; }
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-color: #444;
+            transition: .4s;
+            border-radius: 34px;
+        }
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 16px; width: 16px;
+            left: 4px; bottom: 4px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+        input:checked + .slider { background-color: var(--accent-color); }
+        input:checked + .slider:before { transform: translateX(26px); }
+
+    </style>
+</head>
+<body>
+
+    <div class="app-window">
+        <div class="header">
+            <div class="header-title">
+                <h1><i class="fas fa-kaaba"></i> نور الإسلام</h1>
+            </div>
+            <div class="header-info">
+                <div id="dateDisplay" class="date-text">--/--/----</div>
+                <div id="clock" class="time-text">00:00</div>
+            </div>
+        </div>
+
+        <div class="layout">
+            <div class="sidebar">
+                <div class="nav-item active" onclick="switchTab('quran', this)">
+                    <i class="fas fa-book-quran"></i> قرآن
+                </div>
+                <div class="nav-item" onclick="switchTab('tafseer', this)">
+                    <i class="fas fa-book-open"></i> تفسير
+                </div>
+                <div class="nav-item" onclick="switchTab('prayers', this)">
+                    <i class="fas fa-clock"></i> الصلاة
+                </div>
+                <div class="nav-item" onclick="switchTab('azkar', this)">
+                    <i class="fas fa-hands-praying"></i> أذكار
+                </div>
+                <div class="nav-item" onclick="switchTab('radio', this)">
+                    <i class="fas fa-broadcast-tower"></i> إذاعة
+                </div>
+                <div class="nav-item" onclick="switchTab('herbs', this)">
+                    <i class="fas fa-leaf"></i> أعشاب
+                </div>
+
+                <a href="https://ipn.eg/S/ahlyamiir/instapay/3vvs0B" target="_blank" class="nav-item support-btn">
+                    <i class="fas fa-hand-holding-dollar"></i>
+                    <span>دعم المطور</span>
+                </a>
+            </div>
+
+            <div class="content">
+                
+                <div id="quran" class="section active">
+                    <div class="adhan-controls">
+                        <select id="surahSelect" style="flex:1"></select>
+                        <select id="readerSelect" style="flex:1">
+                            <option value="https://server8.mp3quran.net/afs/">مشاري العفاسي</option>
+                            <option value="https://server7.mp3quran.net/basit/">عبد الباسط عبد الصمد</option>
+                            <option value="https://server11.mp3quran.net/sds/">عبدالرحمن السديس</option>
+                            <option value="https://server12.mp3quran.net/maher/">ماهر المعيقلي</option>
+                            <option value="https://server10.mp3quran.net/minsh/">المنشاوي</option>
+                            <option value="https://server13.mp3quran.net/husr/">الحصري</option>
+                            <option value="https://server11.mp3quran.net/yasser/">ياسر الدوسري</option>
+                            <option value="https://server6.mp3quran.net/ajm/">أحمد العجمي</option>
+                            <option value="https://server9.mp3quran.net/hthfi/">علي الحذيفي</option>
+                            <option value="https://server10.mp3quran.net/jbrl/">محمد جبريل</option>
+                        </select>
+                        <button class="btn btn-primary" onclick="loadAndPlaySurah()"><i class="fas fa-play"></i> تشغيل</button>
+                    </div>
+                    <div id="quranText" class="quran-container">اختر السورة لعرضها...</div>
+                </div>
+
+                <div id="tafseer" class="section">
+                    <h2 style="margin-bottom:15px; color:var(--accent-color);">التفسير الميسر</h2>
+                    <select id="tafseerSelect" onchange="loadTafseer()" style="width:100%; margin-bottom:15px;"></select>
+                    <div id="tafseerContent"></div>
+                </div>
+
+                <div id="prayers" class="section">
+                    <div class="adhan-controls">
+                        <div style="display:flex; align-items:center; gap:10px;">
+                            <span>تفعيل الأذان التلقائي:</span>
+                            <label class="toggle-switch">
+                                <input type="checkbox" id="adhanToggle" checked>
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+                        <div style="flex:1;"></div>
+                        <select id="muezzinSelect">
+                            <option value="https://www.islamcan.com/audio/adhan/azan1.mp3">أذان مكة المكرمة</option>
+                            <option value="https://www.islamcan.com/audio/adhan/azan2.mp3">أذان المدينة المنورة</option>
+                            <option value="https://www.islamcan.com/audio/adhan/azan3.mp3">أذان عبد الباسط</option>
+                            <option value="https://www.islamcan.com/audio/adhan/azan4.mp3">أذان العفاسي</option>
+                            <option value="https://www.islamcan.com/audio/adhan/azan6.mp3">أذان بصوت مصري</option>
+                            <option value="https://www.islamcan.com/audio/adhan/azan7.mp3">أذان تركي</option>
+                            <option value="https://www.islamcan.com/audio/adhan/azan8.mp3">أذان القدس</option>
+                        </select>
+                        <button class="btn btn-primary" onclick="testAdhan()"><i class="fas fa-volume-up"></i> تجربة الصوت</button>
+                    </div>
+
+                    <div style="text-align:center; margin: 20px 0;">
+                        <h2 id="nextPrayerName" style="color:var(--accent-color);">الصلاة القادمة</h2>
+                        <h1 id="nextPrayerTime" style="font-size:3rem;">--:--</h1>
+                    </div>
+
+                    <div class="prayer-grid" id="prayerTimesGrid">
+                        </div>
+                    <p style="text-align:center; font-size:0.8rem; margin-top:20px; opacity:0.6;">
+                        تنبيه: لكي يعمل الأذان التلقائي، يجب أن يكون البرنامج مفتوحاً ولو في الخلفية.
+                    </p>
+                </div>
+
+                <div id="azkar" class="section">
+                    <div style="display:flex; gap:10px; margin-bottom:20px;">
+                        <button class="btn btn-primary" onclick="loadAzkar('morning')">أذكار الصباح</button>
+                        <button class="btn btn-primary" onclick="loadAzkar('evening')">أذكار المساء</button>
+                        <button class="btn" onclick="loadAzkar('prayer')">أذكار بعد الصلاة</button>
+                    </div>
+                    <div id="azkarList" class="azkar-container"></div>
+                </div>
+
+                <div id="radio" class="section">
+                    <div style="text-align:center; margin-top:50px;">
+                        <i class="fas fa-microphone-lines fa-4x" style="color:var(--accent-color); margin-bottom:20px;"></i>
+                        <h2>إذاعة القرآن الكريم من القاهرة</h2>
+                        <div style="margin: 30px auto; width: 80%;">
+                            <audio controls style="width:100%;">
+                                <source src="https://n0e.radiojar.com/8s5u5tpdtwzuv?rj-ttl=5&rj-tok=AAABjJ_2u0kA2M0w_Z0w_Z0w_Z" type="audio/mpeg">
+                            </audio>
+                        </div>
+                        <h3>إذاعة القرآن (السعودية)</h3>
+                        <div style="margin: 10px auto; width: 80%;">
+                             <audio controls style="width:100%;">
+                                <source src="https://stream.radiojar.com/4wqre23fytzuv" type="audio/mpeg">
+                            </audio>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="herbs" class="section">
+                    <input type="text" class="herb-search" placeholder="ابحث عن عشب أو مرض (مثال: صداع، زنجبيل)..." onkeyup="filterHerbs(this.value)">
+                    <div class="herb-grid" id="herbsContainer"></div>
+                </div>
+
+            </div>
+        </div>
+
+        <div class="player-bar">
+            <div id="playerInfo" style="font-size:0.9rem; margin-left:15px; width:150px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">جاهز للتشغيل</div>
+            <audio id="mainAudio" controls></audio>
+            <div class="dev-credit">مع تحيات المطور Amir</div>
+        </div>
+    </div>
+
+    <script>
+        // === بيانات واعدادات ===
+        let prayerTimesData = null;
+        let userLocation = null;
+        const adhanPlayer = new Audio();
+        
+        // === قاعدة بيانات الأعشاب (عينة كبيرة) ===
+        const herbsDB = [
+            {n: "اليانسون", u: "يغلى ويشرب مهدئ للسعال وطارد للغازات."},
+            {n: "البابونج", u: "منقوع الزهر يهدئ الأعصاب ويساعد على النوم."},
+            {n: "الزنجبيل", u: "مغلي مع الليمون لعلاج البرد والغثيان وحرق الدهون."},
+            {n: "حبة البركة", u: "ملعقة مع العسل لرفع المناعة."},
+            {n: "القرنفل", u: "يوضع على الضرس المسوس لتسكين الألم، أو يغلى للمناعة."},
+            {n: "الكركم", u: "يضاف للحليب (الحليب الذهبي) لعلاج المفاصل والالتهابات."},
+            {n: "النعناع", u: "مغلي للقولون والصداع، وزيته دهان للمفاصل."},
+            {n: "القرفة", u: "مشروب ساخن لضبط السكر وتنشيط الدورة الدموية."},
+            {n: "الحلبة", u: "تغلى وتؤكل بذورها لعلاج النحافة ومشاكل التنفس."},
+            {n: "الميرمية", u: "تنظم هرمونات النساء وتعالج آلام المعدة."},
+            {n: "الزعتر", u: "مغلي للكحة وتنظيف الرئة."},
+            {n: "الليمون", u: "عصيره مع الماء الدافئ صباحاً ينظف الكبد."},
+            {n: "الثوم", u: "فص على الريق يخفض الضغط ويقتل الديدان."},
+            {n: "البصل", u: "عصيره مع العسل لعلاج السعال الشديد."},
+            {n: "زيت الزيتون", u: "شرباً للقلب، ودهاناً للجلد والشعر."},
+            {n: "الكركديه", u: "بارداً لخفض الضغط، وساخناً لرفعه (بسيطاً)."},
+            {n: "الشمر", u: "مغلي لشد الجسم والتنحيف وطرد الغازات."},
+            {n: "الكمون", u: "مغلي مع الليمون للتنحيف وانتفاخ البطن."},
+            {n: "إكليل الجبل (الروز ماري)", u: "منقوع لتقوية الذاكرة والشعر."},
+            {n: "البردقوش", u: "ينظم الهرمونات ويعالج الصداع النصفي."},
+            {n: "عرق السوس", u: "يعالج قرحة المعدة (يحذر لمرضى الضغط المرتفع)."},
+            {n: "الشاي الأخضر", u: "مضاد أكسدة قوي وحارق للدهون."},
+            {n: "بذور الكتان", u: "مطحونة على السلطة لعلاج الإمساك والكوليسترول."},
+            {n: "بذور الشيا", u: "تنقع وتشرب للشبع والطاقة."},
+            {n: "الخزامى (اللافندر)", u: "زيتها للاسترخاء، ومغليها للصداع."},
+            {n: "الحبهان (الهيل)", u: "يمضغ لرائحة الفم، ويضاف للقهوة للمعدة."},
+            {n: "الجاوي", u: "بخور لتعقيم الجو، ومنقوع للبلغم."},
+            {n: "الصمغ العربي", u: "مذاب في الماء لعلاج الكلى والسكري."},
+            {n: "اللبان الذكر", u: "منقوع للكحة وشد البشرة."},
+            {n: "السنامكي", u: "ملين قوي للإمساك (يستخدم بحذر)."},
+            {n: "الريحان", u: "مهدئ ومطهر للأمعاء."},
+            {n: "الشيح", u: "طارد للديدان ومطهر للمعدة."},
+            {n: "الخل", u: "مخفف بالماء للمعدة ودهان للدووالي."},
+            {n: "زيت جوز الهند", u: "دهان للشعر والبشرة ومفيد للذاكرة."},
+            {n: "السواك", u: "مطهر للفم ومرضاة للرب."},
+            {n: "القسط الهندي", u: "مطحون لعلاج الغدد ومشاكل الحلق."},
+            {n: "التمر", u: "غذاء كامل ومقوي عام."},
+            {n: "العسل", u: "شفاء للناس، للجروح والحروق والمناعة."},
+            {n: "السدر", u: "مطحون لغسل الشعر والجسم وعلاج الحسد."},
+            {n: "الحناء", u: "للشعر ولعلاج فطريات القدم."},
+            {n: "الزعفران", u: "يحسن المزاج ومقوي للقلب."},
+            {n: "العصفر", u: "يهدئ الخوف والهلع."},
+            {n: "الألوفيرا (الصبار)", u: "جيل للحروق وترطيب البشرة."},
+            {n: "الجينسينج", u: "للطاقة والنشاط البدني."},
+            {n: "بذور القرع", u: "مفيدة للبروستاتا وطاردة للديدان."},
+            {n: "الشوفان", u: "مهدئ للجلد وملين ومغذي."},
+            {n: "التين المجفف", u: "منقوع في زيت الزيتون لفيتامين د والمفاصل."},
+            {n: "ورق الجوافة", u: "مغلي لعلاج الكحة والبلغم."},
+            {n: "التليو", u: "لعلاج نزلات البرد والرشح."},
+            {n: "العنبر", u: "مقوي للقلب والدماغ."}
+        ];
+
+        // === التهيئة عند التشغيل ===
+        window.onload = function() {
+            populateSurahs();
+            renderHerbs(herbsDB);
+            initPrayerTimes();
+            updateClock();
+            setInterval(updateClock, 1000);
+            
+            if (Notification.permission !== 'granted') Notification.requestPermission();
+        };
+
+        function switchTab(tabId, element) {
+            document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+            document.getElementById(tabId).classList.add('active');
+            
+            document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+            // إذا لم يكن العنصر هو زر الدعم (الذي هو رابط) نضيف الكلاس
+            if(!element.classList.contains('support-btn')) {
+                element.classList.add('active');
+            }
+        }
+
+        // === وظائف القرآن ===
+        async function populateSurahs() {
+            const select = document.getElementById('surahSelect');
+            const tafseerSelect = document.getElementById('tafseerSelect');
+            const res = await fetch('https://api.alquran.cloud/v1/surah');
+            const data = await res.json();
+            
+            data.data.forEach(s => {
+                const opt = `<option value="${s.number}">${s.number}. ${s.name}</option>`;
+                select.innerHTML += opt;
+                tafseerSelect.innerHTML += opt;
+            });
+        }
+
+        async function loadAndPlaySurah() {
+            const surahNum = document.getElementById('surahSelect').value;
+            const readerUrl = document.getElementById('readerSelect').value;
+            const display = document.getElementById('quranText');
+            const audio = document.getElementById('mainAudio');
+            
+            if(!surahNum) return alert("اختر سورة أولاً");
+
+            display.innerHTML = '<div style="text-align:center;">جاري التحميل...</div>';
+            try {
+                const res = await fetch(`https://api.alquran.cloud/v1/surah/${surahNum}`);
+                const data = await res.json();
+                let html = `<h2 style="text-align:center; color:#00d2ff; margin-bottom:20px;">${data.data.name}</h2>`;
+                if(surahNum != 1 && surahNum != 9) html += `<div style="text-align:center; font-size:1.2rem; margin-bottom:15px;">بِسْمِ ٱللَّهِ ٱلرَّحْمَٰنِ ٱلرَّحِيمِ</div>`;
+                
+                data.data.ayahs.forEach(a => {
+                    let txt = a.text;
+                    if(surahNum != 1 && surahNum != 9 && a.numberInSurah === 1) txt = txt.replace("بِسْمِ ٱللَّهِ ٱلرَّحْمَٰنِ ٱلرَّحِيمِ ", "");
+                    html += `<span class="ayah">${txt} <span class="ayah-num">(${a.numberInSurah})</span></span>`;
+                });
+                display.innerHTML = html;
+            } catch(e) { display.innerHTML = "خطأ في النص"; }
+
+            const paddedNum = String(surahNum).padStart(3, '0');
+            const audioPath = `${readerUrl}${paddedNum}.mp3`;
+            
+            audio.src = audioPath;
+            document.getElementById('playerInfo').innerText = `جاري التشغيل: سورة رقم ${surahNum}`;
+            audio.play();
+        }
+
+        // === وظائف الصلاة والأذان ===
+        function initPrayerTimes() {
+            fetch('https://api.aladhan.com/v1/timingsByCity?city=Cairo&country=Egypt&method=5')
+                .then(r => r.json())
+                .then(d => {
+                    updatePrayerUI(d.data.timings);
+                });
+                
+            if(navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(pos => {
+                    fetch(`https://api.aladhan.com/v1/timings?latitude=${pos.coords.latitude}&longitude=${pos.coords.longitude}&method=5`)
+                    .then(r => r.json())
+                    .then(d => updatePrayerUI(d.data.timings));
+                });
+            }
+        }
+
+        function updatePrayerUI(timings) {
+            prayerTimesData = timings;
+            const grid = document.getElementById('prayerTimesGrid');
+            const mapping = { Fajr: "الفجر", Dhuhr: "الظهر", Asr: "العصر", Maghrib: "المغرب", Isha: "العشاء" };
+            
+            grid.innerHTML = '';
+            for(let key in mapping) {
+                let time24 = timings[key];
+                let time12 = convertTo12Hour(time24);
+                
+                grid.innerHTML += `
+                    <div class="prayer-card" id="card-${key}">
+                        <div class="prayer-name">${mapping[key]}</div>
+                        <div class="prayer-time">${time12}</div>
+                    </div>
+                `;
+            }
+            checkNextPrayer();
+        }
+
+        function convertTo12Hour(time24) {
+            let [h, m] = time24.split(':');
+            let suffix = h >= 12 ? 'م' : 'ص';
+            h = h % 12 || 12;
+            return `${h}:${m} ${suffix}`;
+        }
+
+        // === تحديث الساعة والتاريخ ===
+        function updateClock() {
+            const now = new Date();
+            
+            // تحديث الوقت 12 ساعة
+            const timeString = now.toLocaleTimeString('ar-EG', {
+                hour: '2-digit', 
+                minute: '2-digit', 
+                hour12: true
+            });
+            
+            // تحديث التاريخ الكامل
+            const dateString = now.toLocaleDateString('ar-EG', {
+                weekday: 'long', 
+                year: 'numeric', 
+                month: 'long', 
+                day: 'numeric'
+            });
+
+            document.getElementById('clock').innerText = timeString;
+            document.getElementById('dateDisplay').innerText = dateString;
+            
+            if(prayerTimesData) checkAdhanTime(now);
+        }
+
+        let lastAdhanPlayed = "";
+
+        function checkAdhanTime(now) {
+            const currentHM = now.toTimeString().slice(0, 5); 
+            const prayers = ['Fajr', 'Dhuhr', 'Asr', 'Maghrib', 'Isha'];
+            
+            prayers.forEach(p => {
+                if(prayerTimesData[p] === currentHM && lastAdhanPlayed !== p) {
+                    if(document.getElementById('adhanToggle').checked) {
+                        playAdhan();
+                        lastAdhanPlayed = p;
+                        new Notification("حان الآن موعد صلاة " + p);
+                    }
+                }
+            });
+        }
+
+        function playAdhan() {
+            const url = document.getElementById('muezzinSelect').value;
+            adhanPlayer.src = url;
+            adhanPlayer.play();
+        }
+
+        function testAdhan() {
+            playAdhan();
+        }
+
+        function checkNextPrayer() {
+            // منطق تحديد الصلاة القادمة
+        }
+
+        // === وظائف الأعشاب ===
+        function renderHerbs(list) {
+            const container = document.getElementById('herbsContainer');
+            container.innerHTML = list.map(h => `
+                <div class="herb-card">
+                    <div class="herb-title">${h.n}</div>
+                    <div style="font-size:0.9rem;">${h.u}</div>
+                </div>
+            `).join('');
+        }
+
+        function filterHerbs(query) {
+            const q = query.toLowerCase();
+            const filtered = herbsDB.filter(h => h.n.includes(q) || h.u.includes(q));
+            renderHerbs(filtered);
+        }
+
+        // === وظائف التفسير ===
+        async function loadTafseer() {
+            const surah = document.getElementById('tafseerSelect').value;
+            if(!surah) return;
+            const div = document.getElementById('tafseerContent');
+            div.innerHTML = 'جاري التحميل...';
+            
+            const r = await fetch(`https://api.alquran.cloud/v1/surah/${surah}/ar.muyassar`);
+            const d = await r.json();
+            
+            div.innerHTML = d.data.ayahs.map(a => `
+                <div style="background:rgba(255,255,255,0.05); margin-bottom:10px; padding:10px; border-radius:8px;">
+                    <div style="color:#00d2ff; font-weight:bold;">آية ${a.numberInSurah}</div>
+                    <div style="margin-top:5px;">${a.text}</div>
+                </div>
+            `).join('');
+        }
+
+        // === وظائف الأذكار ===
+        const azkarDB = {
+            morning: [
+                {t: "أصبحنا وأصبح الملك لله، والحمد لله، لا إله إلا الله وحده لا شريك له...", c: 1},
+                {t: "اللهم بك أصبحنا وبك أمسينا وبك نحيا وبك نموت وإليك النشور.", c: 1},
+                {t: "سبحان الله وبحمده", c: 100},
+                {t: "أستغفر الله وأتوب إليه", c: 100}
+            ],
+            evening: [
+                {t: "أمسينا وأمسى الملك لله...", c: 1},
+                {t: "اللهم بك أمسينا وبك أصبحنا...", c: 1},
+                {t: "أعوذ بكلمات الله التامات من شر ما خلق", c: 3}
+            ],
+            prayer: [
+                {t: "أستغفر الله، أستغفر الله، أستغفر الله", c: 1},
+                {t: "اللهم أنت السلام ومنك السلام تباركت يا ذا الجلال والإكرام", c: 1},
+                {t: "سبحان الله (33)، الحمد لله (33)، الله أكبر (33)", c: 33}
+            ]
+        };
+
+        function loadAzkar(type) {
+            const list = document.getElementById('azkarList');
+            list.innerHTML = azkarDB[type].map(z => `
+                <div class="zekr-card">
+                    <span class="zekr-count">${z.c}</span>
+                    ${z.t}
+                </div>
+            `).join('');
+        }
+
+    </script>
+</body>
+</html>
